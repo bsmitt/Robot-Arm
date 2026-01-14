@@ -1,0 +1,55 @@
+#define ma1 3
+#define ma2 4
+#define mb1 9
+#define mb2 8
+
+int p1 = A3;
+int p2 = A2;
+
+int p2v;
+int p1v;
+
+void setup() {
+  // put your setup code here, to run once:
+Serial.begin(9600);
+pinMode(ma1, OUTPUT);
+pinMode(ma2, OUTPUT);
+pinMode(mb1, OUTPUT);
+pinMode(mb2, OUTPUT);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+p1v = analogRead(p1);
+p2v = analogRead(p2);
+
+if (p1v < 400){ //motor 1 HIGH
+  digitalWrite(ma1, HIGH);
+  digitalWrite(ma2, LOW);
+}
+if (p2v < 400){ //motor 2 HIGH
+  digitalWrite(mb1, HIGH);
+  digitalWrite(mb2, LOW);
+}
+
+
+if (p1v > 600){ //motor 1 LOW
+  digitalWrite(ma1, LOW);
+  digitalWrite(ma2, HIGH);
+}
+if (p2v > 600){ //motor 2 LOW
+  digitalWrite(mb1, LOW);
+  digitalWrite(mb2, HIGH);
+}
+
+
+if ((p1v > 400)&&(p1v < 600)){ //motor 1 OFF
+  digitalWrite(ma1, LOW);
+  digitalWrite(ma2, LOW);
+}
+if ((p2v > 400)&&(p2v < 600)){ //motor 2 OFF
+  digitalWrite(mb1, LOW);
+  digitalWrite(mb2, LOW);
+}
+}
