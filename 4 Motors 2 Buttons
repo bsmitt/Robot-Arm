@@ -1,0 +1,97 @@
+// Controlling two Motors through I2C
+#include <Adafruit_MCP23X17.h>
+
+//Base Motor
+#define MB1 0
+#define MB2 1
+
+//Gripper Motor
+#define MG1 2
+#define MG2 3
+
+//Arm x-axis Motor
+#define MAX1 4
+#define MAX2 5
+
+//Arm y-axis Motor
+#define MAY1 6
+#define MAY2 7
+
+//Button Pins
+#define B1 6
+#define B2 7
+
+//Button value of both
+bool BTV = true;
+
+
+Adafruit_MCP23X17 mcp;
+
+void setup() {
+  Serial.begin(9600);
+
+  if (!mcp.begin_I2C()) {
+    Serial.println("Error.");
+    while (1)
+      ;
+  }
+
+  // configure pin for output
+  mcp.pinMode(MB1, OUTPUT);
+  mcp.pinMode(MB2, OUTPUT);
+
+  mcp.pinMode(MG1, OUTPUT);
+  mcp.pinMode(MG2, OUTPUT);
+
+  mcp.pinMode(MAX1, OUTPUT);
+  mcp.pinMode(MAX2, OUTPUT);
+
+  mcp.pinMode(MAY1, OUTPUT);
+  mcp.pinMode(MAY2, OUTPUT);
+
+  pinMode(B1, INPUT_PULLUP);
+  pinMode(B2, INPUT_PULLUP);
+}
+
+void loop() {
+
+  int B1v = digitalRead(B1);
+  int B2v = digitalRead(B2);
+
+  if (B1v == 0) {
+    BTV = true;
+    delay(100);
+  }
+  if (B2v == 0) {
+    BTV = false;
+    delay(100);
+  }
+
+  if (BTV == false) {
+    mcp.digitalWrite(MB1, HIGH);
+    mcp.digitalWrite(MB2, LOW);
+
+    mcp.digitalWrite(MG1, HIGH);
+    mcp.digitalWrite(MG2, LOW);
+
+    mcp.digitalWrite(MAX1, HIGH);
+    mcp.digitalWrite(MAX2, LOW);
+
+    mcp.digitalWrite(MAY1, HIGH);
+    mcp.digitalWrite(MAY2, LOW);
+  }
+  if (BTV == true) {
+    mcp.digitalWrite(MB2, HIGH);
+    mcp.digitalWrite(MB1, LOW);
+
+    mcp.digitalWrite(MG2, HIGH);
+    mcp.digitalWrite(MG1, LOW);
+
+    mcp.digitalWrite(MAX2, HIGH);
+    mcp.digitalWrite(MAX1, LOW);
+
+    mcp.digitalWrite(MAY2, HIGH);
+    mcp.digitalWrite(MAY1, LOW);
+  }
+
+}
