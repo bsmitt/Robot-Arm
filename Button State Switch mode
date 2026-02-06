@@ -1,0 +1,163 @@
+// Controlling two Motors through I2C
+#include <Adafruit_MCP23X17.h>
+
+//Button Pins
+#define B1 4
+#define B2 5
+#define B3 6
+#define B4 7
+
+//Base Motor
+#define MB1 0
+#define MB2 1
+
+//Gripper Motor
+#define MG1 2
+#define MG2 3
+
+//Arm x-axis Motor
+#define MAX1 4
+#define MAX2 5
+
+//Arm y-axis Motor
+#define MAY1 6
+#define MAY2 7
+
+//Pontentiameters
+int P1 = A0;
+//Only for 4 Motor control
+/*int P2 = A1;
+int P3 = A3;
+int P4 = A2;*/
+
+//Button Variables
+bool B1v = false;
+bool B2v = false;
+bool B3v = false;
+bool B4v = false;
+
+Adafruit_MCP23X17 mcp;
+
+void setup() {
+  Serial.begin(9600);
+
+  if (!mcp.begin_I2C()) {
+    Serial.println("Error.");
+    while (1)
+      ;
+  }
+
+  //Button Inputs
+  pinMode(B1, INPUT_PULLUP);
+  pinMode(B2, INPUT_PULLUP);
+  pinMode(B3, INPUT_PULLUP);
+  pinMode(B4, INPUT_PULLUP);
+
+
+  //Motor Outputs
+  mcp.pinMode(MB1, OUTPUT);
+  mcp.pinMode(MB2, OUTPUT);
+
+  mcp.pinMode(MG1, OUTPUT);
+  mcp.pinMode(MG2, OUTPUT);
+
+  mcp.pinMode(MAX1, OUTPUT);
+  mcp.pinMode(MAX2, OUTPUT);
+
+  mcp.pinMode(MAY1, OUTPUT);
+  mcp.pinMode(MAY2, OUTPUT);
+}
+
+void loop() {
+
+  int P1v = analogRead(P1);
+  /*int P2v = analogRead(P2);
+  int P3v = analogRead(P3);   //4 Motor Control
+  int P4v = analogRead(P4);*/
+
+  bool b1 = digitalRead(B1) == LOW;
+  bool b2 = digitalRead(B2) == LOW;
+  bool b3 = digitalRead(B3) == LOW;
+  bool b4 = digitalRead(B4) == LOW;
+
+  if (b1) {
+    B1v = true;
+    B2v = false;
+    B3v = false;
+    B4v = false;
+  } else if (b2) {
+    B1v = false;
+    B2v = true;
+    B3v = false;
+    B4v = false;
+  } else if (b3) {
+    B1v = false;
+    B2v = false;
+    B3v = true;
+    B4v = false;
+  } else if (b4) {
+    B1v = false;
+    B2v = false;
+    B3v = false;
+    B4v = true;
+  }
+
+
+  if (B1v == true) {
+    // Base Motor Control
+    if (P1v < 400) {
+      mcp.digitalWrite(MB1, HIGH);
+      mcp.digitalWrite(MB2, LOW);
+    } else if (P1v > 600) {
+      mcp.digitalWrite(MB1, LOW);
+      mcp.digitalWrite(MB2, HIGH);
+    } else {
+      mcp.digitalWrite(MB1, LOW);
+      mcp.digitalWrite(MB2, LOW);
+    }
+  } else if (B2v == true) {
+    // Gripper Motor Control
+    if (P1v < 400) {
+      mcp.digitalWrite(MG1, HIGH);
+      mcp.digitalWrite(MG2, LOW);
+    } else if (P1v > 600) {
+      mcp.digitalWrite(MG1, LOW);
+      mcp.digitalWrite(MG2, HIGH);
+    } else {
+      mcp.digitalWrite(MG1, LOW);
+      mcp.digitalWrite(MG2, LOW);
+    }
+  } else if (B3v == true) {
+    // X-axis Motor Control
+    if (P1v < 400) {
+      mcp.digitalWrite(MAX1, HIGH);
+      mcp.digitalWrite(MAX2, LOW);
+    } else if (P1v > 600) {
+      mcp.digitalWrite(MAX1, LOW);
+      mcp.digitalWrite(MAX2, HIGH);
+    } else {
+      mcp.digitalWrite(MAX1, LOW);
+      mcp.digitalWrite(MAX2, LOW);
+    }
+  } else if (B4v == true) {
+    // Y-axis Motor Control
+    if (P1v < 400) {
+      mcp.digitalWrite(MAY1, HIGH);
+      mcp.digitalWrite(MAY2, LOW);
+    } else if (P1v > 600) {
+      mcp.digitalWrite(MAY1, LOW);
+      mcp.digitalWrite(MAY2, HIGH);
+    } else {
+      mcp.digitalWrite(MAY1, LOW);
+      mcp.digitalWrite(MAY2, LOW);
+    }
+  }
+
+  Serial.print("Mode: ");
+  if (B1v) Serial.println("Base");
+  else if (B2v) Serial.println("Gripper");
+  else if (B3v) Serial.println("X-axis");
+  else if (B4v) Serial.println("Y-axis");
+  else Serial.println("None");
+  delay(10);
+}
