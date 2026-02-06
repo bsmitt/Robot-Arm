@@ -2,9 +2,9 @@
 #include <Adafruit_MCP23X17.h>
 
 //Button Pins
-#define B1 1
-#define B2 2
-#define B3 3
+#define B1 9
+#define B2 10
+#define B3 11
 
 //Base Motor
 #define MB1 0
@@ -71,17 +71,17 @@ void loop() {
   int P3v = analogRead(P3);   //4 Motor Control
   int P4v = analogRead(P4);*/
 
-  if (B1 == 1) {
+  if (digitalRead(B1) == LOW) {
     B1v = true;
     B2v = false;
     B3v = false;
     delay(100);
-  } else if (B2 == 1) {
+  } else if (digitalRead(B2) == LOW) {
     B1v = false;
     B2v = true;
     B3v = false;
     delay(100);
-  } else if (B3 == 1) {
+  } else if (digitalRead(B3) == LOW) {
     B1v = false;
     B2v = false;
     B3v = true;
