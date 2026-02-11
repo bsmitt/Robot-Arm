@@ -6,6 +6,8 @@
 #define B2 5
 #define B3 6
 #define B4 7
+#define B5 8
+#define B6 9
 
 //Base Motor
 #define MB1 0
@@ -23,6 +25,15 @@
 #define MAY1 6
 #define MAY2 7
 
+//Wrist Right Motor
+#define MWR1 8
+#define MWR2 9
+
+//Wrist Left Motor
+#define MWL1 10
+#define MWL2 11
+
+
 //Pontentiameters
 int P1 = A0;
 //Only for 4 Motor control
@@ -35,6 +46,9 @@ bool B1v = false;
 bool B2v = false;
 bool B3v = false;
 bool B4v = false;
+bool B5v = false;
+bool B6v = false;
+
 
 Adafruit_MCP23X17 mcp;
 
@@ -52,6 +66,9 @@ void setup() {
   pinMode(B2, INPUT_PULLUP);
   pinMode(B3, INPUT_PULLUP);
   pinMode(B4, INPUT_PULLUP);
+  pinMode(B5, INPUT_PULLUP);
+  pinMode(B6, INPUT_PULLUP);
+
 
 
   //Motor Outputs
@@ -66,6 +83,12 @@ void setup() {
 
   mcp.pinMode(MAY1, OUTPUT);
   mcp.pinMode(MAY2, OUTPUT);
+
+  mcp.pinMode(MWR1, OUTPUT);
+  mcp.pinMode(MWR2, OUTPUT);
+
+  mcp.pinMode(MWL1, OUTPUT);
+  mcp.pinMode(MWL2, OUTPUT);
 }
 
 void loop() {
@@ -79,28 +102,35 @@ void loop() {
   bool b2 = digitalRead(B2) == LOW;
   bool b3 = digitalRead(B3) == LOW;
   bool b4 = digitalRead(B4) == LOW;
+  bool b5 = digitalRead(B5) == LOW;
+  bool b6 = digitalRead(B6) == LOW;
 
-  if (b1) {
-    B1v = true;
-    B2v = false;
-    B3v = false;
-    B4v = false;
-  } else if (b2) {
-    B1v = false;
-    B2v = true;
-    B3v = false;
-    B4v = false;
-  } else if (b3) {
-    B1v = false;
-    B2v = false;
-    B3v = true;
-    B4v = false;
-  } else if (b4) {
-    B1v = false;
-    B2v = false;
-    B3v = false;
-    B4v = true;
+
+  // Read buttons with simple debounce
+if (b1) {
+  B1v = true; B2v = B3v = B4v = B5v = B6v = false;
+}
+else if (b2) {
+  B2v = true; B1v = B3v = B4v = B5v = B6v = false;
+}
+else if (b3) {
+  B3v = true; B1v = B2v = B4v = B5v = B6v = false;
+}
+else if (b4) {
+  B4v = true; B1v = B2v = B3v = B5v = B6v = false;
+}
+else if (b5) {
+  delay(20); // debounce
+  if (digitalRead(B5) == LOW) {
+    B5v = true; B1v = B2v = B3v = B4v = B6v = false;
   }
+}
+else if (b6) {
+  delay(20); // debounce
+  if (digitalRead(B6) == LOW) {
+    B6v = true; B1v = B2v = B3v = B4v = B5v = false;
+  }
+}
 
 
   if (B1v == true) {
@@ -151,13 +181,49 @@ void loop() {
       mcp.digitalWrite(MAY1, LOW);
       mcp.digitalWrite(MAY2, LOW);
     }
-  }
+  } else if (B5v == true || B6v == true) {
 
-  Serial.print("Mode: ");
-  if (B1v) Serial.println("Base");
-  else if (B2v) Serial.println("Gripper");
-  else if (B3v) Serial.println("X-axis");
-  else if (B4v) Serial.println("Y-axis");
-  else Serial.println("None");
-  delay(10);
+    if (B5v == true) {
+      // Wrist symmetric control
+      if (P1v < 400) {
+        mcp.digitalWrite(MWR1, HIGH);
+        mcp.digitalWrite(MWR2, LOW);
+
+        mcp.digitalWrite(MWL1, HIGH);
+        mcp.digitalWrite(MWL2, LOW);
+      } else if (P1v > 600) {
+        mcp.digitalWrite(MWR1, LOW);
+        mcp.digitalWrite(MWR2, HIGH);
+
+        mcp.digitalWrite(MWL1, LOW);
+        mcp.digitalWrite(MWL2, HIGH);
+      } else {
+        mcp.digitalWrite(MWR1, LOW);
+        mcp.digitalWrite(MWR2, LOW);
+        mcp.digitalWrite(MWL1, LOW);
+        mcp.digitalWrite(MWL2, LOW);
+      }
+
+    } else if (B6v == true) {
+      // Wrist opposite control
+      if (P1v < 400) {
+        mcp.digitalWrite(MWR1, HIGH);
+        mcp.digitalWrite(MWR2, LOW);
+
+        mcp.digitalWrite(MWL1, LOW);
+        mcp.digitalWrite(MWL2, HIGH);
+      } else if (P1v > 600) {
+        mcp.digitalWrite(MWR1, LOW);
+        mcp.digitalWrite(MWR2, HIGH);
+
+        mcp.digitalWrite(MWL1, HIGH);
+        mcp.digitalWrite(MWL2, LOW);
+      } else {
+        mcp.digitalWrite(MWR1, LOW);
+        mcp.digitalWrite(MWR2, LOW);
+        mcp.digitalWrite(MWL1, LOW);
+        mcp.digitalWrite(MWL2, LOW);
+      }
+    }
+  }
 }
