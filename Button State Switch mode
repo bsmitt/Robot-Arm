@@ -33,6 +33,13 @@
 #define MWL1 10
 #define MWL2 11
 
+//Microswitches
+#define msB 0
+#define msX 1
+#define msY 2
+#define msP 3
+#define msR 4
+#define msG 5
 
 //Pontentiameters
 int P1 = A0;
@@ -50,16 +57,29 @@ bool B5v = false;
 bool B6v = false;
 
 
-Adafruit_MCP23X17 mcp;
+Adafruit_MCP23X17 mcp1;
+Adafruit_MCP23X17 mcp2;
 
 void setup() {
   Serial.begin(9600);
 
-  if (!mcp.begin_I2C()) {
+  if (!mcp1.begin_I2C(0x20)) {
     Serial.println("Error.");
     while (1)
       ;
   }
+    if (!mcp2.begin_I2C(0x21)) {
+    Serial.println("Error.");
+    while (1)
+      ;
+  }
+  
+  mcp2.pinMode(msB, INPUT_PULLUP);
+  mcp2.pinMode(msX, INPUT_PULLUP);
+  mcp2.pinMode(msY, INPUT_PULLUP);
+  mcp2.pinMode(msP, INPUT_PULLUP);
+  mcp2.pinMode(msR, INPUT_PULLUP);
+  mcp2.pinMode(msG, INPUT_PULLUP);
 
   //Button Inputs
   pinMode(B1, INPUT_PULLUP);
@@ -72,31 +92,36 @@ void setup() {
 
 
   //Motor Outputs
-  mcp.pinMode(MB1, OUTPUT);
-  mcp.pinMode(MB2, OUTPUT);
+  mcp1.pinMode(MB1, OUTPUT);
+  mcp1.pinMode(MB2, OUTPUT);
 
-  mcp.pinMode(MG1, OUTPUT);
-  mcp.pinMode(MG2, OUTPUT);
+  mcp1.pinMode(MG1, OUTPUT);
+  mcp1.pinMode(MG2, OUTPUT);
 
-  mcp.pinMode(MAX1, OUTPUT);
-  mcp.pinMode(MAX2, OUTPUT);
+  mcp1.pinMode(MAX1, OUTPUT);
+  mcp1.pinMode(MAX2, OUTPUT);
 
-  mcp.pinMode(MAY1, OUTPUT);
-  mcp.pinMode(MAY2, OUTPUT);
+  mcp1.pinMode(MAY1, OUTPUT);
+  mcp1.pinMode(MAY2, OUTPUT);
 
-  mcp.pinMode(MWR1, OUTPUT);
-  mcp.pinMode(MWR2, OUTPUT);
+  mcp1.pinMode(MWR1, OUTPUT);
+  mcp1.pinMode(MWR2, OUTPUT);
 
-  mcp.pinMode(MWL1, OUTPUT);
-  mcp.pinMode(MWL2, OUTPUT);
+  mcp1.pinMode(MWL1, OUTPUT);
+  mcp1.pinMode(MWL2, OUTPUT);
 }
 
 void loop() {
 
+
+bool msBv = mcp2.digitalRead(msB) == LOW;
+bool msXv = mcp2.digitalRead(msX) == LOW;
+bool msYv = mcp2.digitalRead(msY) == LOW;
+bool msPv = mcp2.digitalRead(msP) == LOW;
+bool msRv = mcp2.digitalRead(msR) == LOW;
+bool msGv = mcp2.digitalRead(msG) == LOW;
+
   int P1v = analogRead(P1);
-  /*int P2v = analogRead(P2);
-  int P3v = analogRead(P3);   //4 Motor Control
-  int P4v = analogRead(P4);*/
 
   bool b1 = digitalRead(B1) == LOW;
   bool b2 = digitalRead(B2) == LOW;
@@ -136,93 +161,93 @@ else if (b6) {
   if (B1v == true) {
     // Base Motor Control
     if (P1v < 400) {
-      mcp.digitalWrite(MB1, HIGH);
-      mcp.digitalWrite(MB2, LOW);
+      mcp1.digitalWrite(MB1, HIGH);
+      mcp1.digitalWrite(MB2, LOW);
     } else if (P1v > 600) {
-      mcp.digitalWrite(MB1, LOW);
-      mcp.digitalWrite(MB2, HIGH);
+      mcp1.digitalWrite(MB1, LOW);
+      mcp1.digitalWrite(MB2, HIGH);
     } else {
-      mcp.digitalWrite(MB1, LOW);
-      mcp.digitalWrite(MB2, LOW);
+      mcp1.digitalWrite(MB1, LOW);
+      mcp1.digitalWrite(MB2, LOW);
     }
   } else if (B2v == true) {
     // Gripper Motor Control
     if (P1v < 400) {
-      mcp.digitalWrite(MG1, HIGH);
-      mcp.digitalWrite(MG2, LOW);
+      mcp1.digitalWrite(MG1, HIGH);
+      mcp1.digitalWrite(MG2, LOW);
     } else if (P1v > 600) {
-      mcp.digitalWrite(MG1, LOW);
-      mcp.digitalWrite(MG2, HIGH);
+      mcp1.digitalWrite(MG1, LOW);
+      mcp1.digitalWrite(MG2, HIGH);
     } else {
-      mcp.digitalWrite(MG1, LOW);
-      mcp.digitalWrite(MG2, LOW);
+      mcp1.digitalWrite(MG1, LOW);
+      mcp1.digitalWrite(MG2, LOW);
     }
   } else if (B3v == true) {
     // X-axis Motor Control
     if (P1v < 400) {
-      mcp.digitalWrite(MAX1, HIGH);
-      mcp.digitalWrite(MAX2, LOW);
+      mcp1.digitalWrite(MAX1, HIGH);
+      mcp1.digitalWrite(MAX2, LOW);
     } else if (P1v > 600) {
-      mcp.digitalWrite(MAX1, LOW);
-      mcp.digitalWrite(MAX2, HIGH);
+      mcp1.digitalWrite(MAX1, LOW);
+      mcp1.digitalWrite(MAX2, HIGH);
     } else {
-      mcp.digitalWrite(MAX1, LOW);
-      mcp.digitalWrite(MAX2, LOW);
+      mcp1.digitalWrite(MAX1, LOW);
+      mcp1.digitalWrite(MAX2, LOW);
     }
   } else if (B4v == true) {
     // Y-axis Motor Control
     if (P1v < 400) {
-      mcp.digitalWrite(MAY1, HIGH);
-      mcp.digitalWrite(MAY2, LOW);
+      mcp1.digitalWrite(MAY1, HIGH);
+      mcp1.digitalWrite(MAY2, LOW);
     } else if (P1v > 600) {
-      mcp.digitalWrite(MAY1, LOW);
-      mcp.digitalWrite(MAY2, HIGH);
+      mcp1.digitalWrite(MAY1, LOW);
+      mcp1.digitalWrite(MAY2, HIGH);
     } else {
-      mcp.digitalWrite(MAY1, LOW);
-      mcp.digitalWrite(MAY2, LOW);
+      mcp1.digitalWrite(MAY1, LOW);
+      mcp1.digitalWrite(MAY2, LOW);
     }
   } else if (B5v == true || B6v == true) {
 
     if (B5v == true) {
       // Wrist symmetric control
       if (P1v < 400) {
-        mcp.digitalWrite(MWR1, HIGH);
-        mcp.digitalWrite(MWR2, LOW);
+        mcp1.digitalWrite(MWR1, HIGH);
+        mcp1.digitalWrite(MWR2, LOW);
 
-        mcp.digitalWrite(MWL1, HIGH);
-        mcp.digitalWrite(MWL2, LOW);
+        mcp1.digitalWrite(MWL1, HIGH);
+        mcp1.digitalWrite(MWL2, LOW);
       } else if (P1v > 600) {
-        mcp.digitalWrite(MWR1, LOW);
-        mcp.digitalWrite(MWR2, HIGH);
+        mcp1.digitalWrite(MWR1, LOW);
+        mcp1.digitalWrite(MWR2, HIGH);
 
-        mcp.digitalWrite(MWL1, LOW);
-        mcp.digitalWrite(MWL2, HIGH);
+        mcp1.digitalWrite(MWL1, LOW);
+        mcp1.digitalWrite(MWL2, HIGH);
       } else {
-        mcp.digitalWrite(MWR1, LOW);
-        mcp.digitalWrite(MWR2, LOW);
-        mcp.digitalWrite(MWL1, LOW);
-        mcp.digitalWrite(MWL2, LOW);
+        mcp1.digitalWrite(MWR1, LOW);
+        mcp1.digitalWrite(MWR2, LOW);
+        mcp1.digitalWrite(MWL1, LOW);
+        mcp1.digitalWrite(MWL2, LOW);
       }
 
     } else if (B6v == true) {
       // Wrist opposite control
       if (P1v < 400) {
-        mcp.digitalWrite(MWR1, HIGH);
-        mcp.digitalWrite(MWR2, LOW);
+        mcp1.digitalWrite(MWR1, HIGH);
+        mcp1.digitalWrite(MWR2, LOW);
 
-        mcp.digitalWrite(MWL1, LOW);
-        mcp.digitalWrite(MWL2, HIGH);
+        mcp1.digitalWrite(MWL1, LOW);
+        mcp1.digitalWrite(MWL2, HIGH);
       } else if (P1v > 600) {
-        mcp.digitalWrite(MWR1, LOW);
-        mcp.digitalWrite(MWR2, HIGH);
+        mcp1.digitalWrite(MWR1, LOW);
+        mcp1.digitalWrite(MWR2, HIGH);
 
-        mcp.digitalWrite(MWL1, HIGH);
-        mcp.digitalWrite(MWL2, LOW);
+        mcp1.digitalWrite(MWL1, HIGH);
+        mcp1.digitalWrite(MWL2, LOW);
       } else {
-        mcp.digitalWrite(MWR1, LOW);
-        mcp.digitalWrite(MWR2, LOW);
-        mcp.digitalWrite(MWL1, LOW);
-        mcp.digitalWrite(MWL2, LOW);
+        mcp1.digitalWrite(MWR1, LOW);
+        mcp1.digitalWrite(MWR2, LOW);
+        mcp1.digitalWrite(MWL1, LOW);
+        mcp1.digitalWrite(MWL2, LOW);
       }
     }
   }
