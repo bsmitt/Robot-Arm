@@ -34,7 +34,7 @@ class encoderValue:
         
         encoderValue.counter += 1
     
-    def getCount(self):
+    def getCount(self): #stops bottle necking from non moving encoder
         if self.sm.rx_fifo() > 0:
             raw = self.sm.get()
             if raw > 0x7FFFFFFF:
@@ -45,12 +45,19 @@ class encoderValue:
 
 baseEncoder=encoderValue(16)
 shoulderEncoder=encoderValue(18)
+elbowEncoder=encoderValue(20)
+wristrightEncoder=encoderValue(14)
+wristleftEncoder=encoderValue(12)
+gripperEncoder=encoderValue(10)
 
 while True:
     baseCount = baseEncoder.getCount()
     shoulderCount = shoulderEncoder.getCount()
+    elbowCount = elbowEncoder.getCount()
+    wristrightCount = wristrightEncoder.getCount()
+    wristleftCount = wristleftEncoder.getCount()
+    gripperCount = gripperEncoder.getCount()
     
-    if shoulderCount is not None:
-        print("shoulder:", shoulderCount)
-    if baseCount is not None:
-        print("base:", baseCount)
+    
+    if gripperCount is not None:
+        print("elbow:", gripperCount)
