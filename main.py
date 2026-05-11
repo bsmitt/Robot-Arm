@@ -1,5 +1,5 @@
 import time
-from machine import Pin
+from machine import Pin, PWM
 import rp2
 
 basePin=Pin(8, Pin.IN)
@@ -50,6 +50,13 @@ wristrightEncoder=encoderValue(14)
 wristleftEncoder=encoderValue(12)
 gripperEncoder=encoderValue(10)
 
+basePWM = PWM(Pin(9), freq = 1000, duty_u16=65535)
+shoulderPWM = PWM(Pin(8), freq = 1000, duty_u16=65535)
+elbowPWM = PWM(Pin(7), freq = 1000, duty_u16=65535)
+wristrightPWM = PWM(Pin(6), freq = 1000, duty_u16=65535)
+wristleftPWM = PWM(Pin(5), freq = 1000, duty_u16=65535)
+gripperPWM = PWM(Pin(4), freq = 1000, duty_u16=65535)
+
 while True:
     baseCount = baseEncoder.getCount()
     shoulderCount = shoulderEncoder.getCount()
@@ -59,5 +66,3 @@ while True:
     gripperCount = gripperEncoder.getCount()
     
     
-    if gripperCount is not None:
-        print("elbow:", gripperCount)
