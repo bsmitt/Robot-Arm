@@ -1,8 +1,8 @@
 import time
-from machine import Pin, PWM
+from machine import Pin, PWM, I2C
 import rp2
+import mcp23017
 
-basePin=Pin(8, Pin.IN)
 class encoderValue:
     counter=0
     @rp2.asm_pio(in_shiftdir=rp2.PIO.SHIFT_RIGHT)
@@ -42,6 +42,14 @@ class encoderValue:
             return raw
         return None
 
+i2c = machine.I2C(0, sda=machine.Pin(0), scl=machine.Pin(1))
+print(i2c.scan())
+
+
+#mcpI2C = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
+#print(mcpI2C.scan())
+
+#mcp = mcp23017.MCP23017(mcpI2C, 0x20)
 
 baseEncoder=encoderValue(16)
 shoulderEncoder=encoderValue(18)
@@ -57,6 +65,7 @@ wristrightPWM = PWM(Pin(6), freq = 1000, duty_u16=65535)
 wristleftPWM = PWM(Pin(5), freq = 1000, duty_u16=65535)
 gripperPWM = PWM(Pin(4), freq = 1000, duty_u16=65535)
 
+
 while True:
     baseCount = baseEncoder.getCount()
     shoulderCount = shoulderEncoder.getCount()
@@ -64,5 +73,12 @@ while True:
     wristrightCount = wristrightEncoder.getCount()
     wristleftCount = wristleftEncoder.getCount()
     gripperCount = gripperEncoder.getCount()
+    
+    basePWM.duty_u16(65535)
+    shoulderPWM.duty_u16(0)
+    elbowPWM.duty_u16(0)
+    wristrightPWM.duty_u16(0)
+    wristleftPWM.duty_u16(0)
+    gripperPWM.duty_u16(0)
     
     
