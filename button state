@@ -1,0 +1,117 @@
+#Base Control
+        if b1 and not b1_prev:
+            b1Count = (b1Count + 1) % 2
+            if b1Count:
+                print("Base-ON")
+            else:
+                print("Base-OFF")            
+        b1_prev = b1        
+        if (b1Count):
+            if (switchRight):
+                baseRun(1, 65535)
+            elif (switchLeft):
+                baseRun(0, 65535)
+            else:
+                baseRun(0, 0)
+        else:
+            baseRun(0,0)
+        
+        #Shoulder Control
+        if b2 and not b2_prev:
+            b2Count = (b2Count + 1) % 2
+            if b2Count:
+                print("Shoulder-ON")
+            else:
+                print("Shoulder-OFF")            
+        b2_prev = b2        
+        if (b2Count):
+            if (switchRight):
+                shoulderRun(1, 65535)
+            elif (switchLeft):
+                shoulderRun(0, 65535)
+            else:
+                shoulderRun(0, 0)
+        else:
+            shoulderRun(0,0)
+        
+        #Elbow Control
+        if b3 and not b3_prev:
+            b3Count = (b3Count + 1) % 2
+            if b3Count:
+                print("Elbow-ON")
+            else:
+                print("Elbow-OFF")            
+        b3_prev = b3        
+        if (b3Count):
+            if (switchRight):
+                elbowRun(1, 65535)
+            elif (switchLeft):
+                elbowRun(0, 65535)
+            else:
+                elbowRun(0, 0)
+        else:
+            elbowRun(0,0)
+            
+        #Gripper Control
+        if b4 and not b4_prev:
+            b4Count = (b4Count + 1) % 2
+            if b4Count:
+                print("Gripper-ON")
+            else:
+                print("Gripper-OFF")            
+        b4_prev = b4        
+        if (b4Count):
+            if (switchRight):
+                gripperRun(1, 65535)
+            elif (switchLeft):
+                gripperRun(0, 65535)
+            else:
+                gripperRun(0, 0)
+        else:
+            gripperRun(0,0)
+        
+        #Pitch Control
+        if b5 and not b5_prev:
+            b5Count = (b5Count + 1) % 2
+            if b5Count:
+                b6Count = 0
+                print("Pitch-ON")
+            else:
+                print("Pitch-OFF")            
+        b5_prev = b5       
+        if (b5Count):
+            if (switchRight):
+                wrist_rightRun(1, 65535)
+                wrist_leftRun(0, 65535)
+            elif (switchLeft):
+                wrist_rightRun(0, 65535)
+                wrist_leftRun(1, 65535)
+            else:
+                wrist_rightRun(0, 0)
+                wrist_leftRun(0, 0)
+        elif not b6Count:
+            wrist_rightRun(0, 0)
+            wrist_leftRun(0, 0)
+            
+        #Roll Control
+        if b6 and not b6_prev:
+            b6Count = (b6Count + 1) % 2
+            if b6Count:
+                b5Count = 0
+                print("Roll-ON")
+            else:
+                print("Roll-OFF")
+        b6_prev = b6       
+        if (b6Count):
+            if (switchRight):
+                wrist_rightRun(0, 65535)
+                wrist_leftRun(0, 65535)
+            elif (switchLeft):
+                wrist_rightRun(1, 65535)
+                wrist_leftRun(1, 65535)
+            else:
+                wrist_rightRun(0, 0)
+                wrist_leftRun(0, 0)
+        elif not b5Count:
+            wrist_rightRun(0, 0)
+            wrist_leftRun(0, 0)
