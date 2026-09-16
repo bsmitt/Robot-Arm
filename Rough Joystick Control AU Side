@@ -1,0 +1,70 @@
+#include <Wire.h>
+
+//A0 is x A1 is y
+
+#define SWT0_PIN 2
+#define SWT1_PIN 3
+#define BTN0_PIN 4
+#define BTN1_PIN 5
+#define BTN2_PIN 6
+#define BTN3_PIN 7
+#define BTN4_PIN 8
+#define BTN5_PIN 9
+#define RSTB_PIN 10
+#define JOY0_PIN 11
+
+byte TxByte0 = 0;
+byte TxByte1 = 0;
+byte TxByte2 = 0;
+byte TxByte3 = 0;
+byte TxByte4 = 0;
+byte TxByte5 = 0;
+
+void I2C_TxHandler(void) {
+  Wire.write(TxByte0);
+  Wire.write(TxByte1);
+  Wire.write(TxByte2);
+  Wire.write(TxByte3);
+  Wire.write(TxByte4);
+  Wire.write(TxByte5);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(SWT0_PIN, INPUT_PULLUP);
+  pinMode(SWT1_PIN, INPUT_PULLUP);
+  pinMode(BTN0_PIN, INPUT_PULLUP);
+  pinMode(BTN1_PIN, INPUT_PULLUP);
+  pinMode(BTN2_PIN, INPUT_PULLUP);
+  pinMode(BTN3_PIN, INPUT_PULLUP);
+  pinMode(BTN4_PIN, INPUT_PULLUP);
+  pinMode(BTN5_PIN, INPUT_PULLUP);
+  pinMode(JOY0_PIN, INPUT_PULLUP);
+
+  Wire.begin(0x55);  // Initialize I2C (Slave Mode: address=0x55 )
+  Wire.onRequest(I2C_TxHandler);
+}
+
+void loop() {
+  byte BtnsData0 = 0;
+  byte BtnsData1 = 0;
+
+  BtnsData0 |= (!digitalRead(SWT0_PIN)) << 0;
+  BtnsData0 |= (!digitalRead(SWT1_PIN)) << 1;
+  BtnsData0 |= (!digitalRead(BTN0_PIN)) << 2;
+  BtnsData0 |= (!digitalRead(BTN1_PIN)) << 3;
+  BtnsData0 |= (!digitalRead(BTN2_PIN)) << 4;
+  BtnsData0 |= (!digitalRead(BTN3_PIN)) << 5;
+  BtnsData0 |= (!digitalRead(BTN4_PIN)) << 6;
+  BtnsData0 |= (!digitalRead(BTN5_PIN)) << 7;
+  BtnsData1 |= (!digitalRead(RSTB_PIN)) << 0;
+  BtnsData1 |= (!digitalRead(JOY0_PIN)) << 1;
+
+  TxByte0 = BtnsData0;
+  TxByte1 = BtnsData1;
+  TxByte2 = analogRead(A0) >> 2;
+  TxByte3 = analogRead(A1) >> 2;
+  TxByte4 = analogRead(A2) >> 2;
+  TxByte5 = analogRead(A3) >> 2;
+  delay(10);
+}
