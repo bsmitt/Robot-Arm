@@ -1,0 +1,266 @@
+import time
+from machine import Pin, PWM, I2C
+import rp2
+import mcp23017
+from state_machine import encoderValue
+
+
+baseDirection = 0  # tracks commanded direction for base
+
+def baseRun(direction, speed):
+    global baseDirection
+    if speed > 0:
+        baseDirection = direction
+    mcp.pin(baseDir, value=direction)
+    basePWM.duty_u16(speed)
+
+def shoulderRun(direction, speed):
+    mcp.pin(shoulderDir, value=direction)
+    shoulderPWM.duty_u16(speed)
+    
+def elbowRun(direction, speed):
+    mcp.pin(elbowDir, value=direction)
+    elbowPWM.duty_u16(speed)
+    
+def wrist_rightRun(direction, speed):
+    mcp.pin(wrist_rightDir, value=direction)
+    wrist_rightPWM.duty_u16(speed)
+    
+def wrist_leftRun(direction, speed):
+    mcp.pin(wrist_leftDir, value=direction)
+    wrist_leftPWM.duty_u16(speed)
+    
+def gripperRun(direction, speed):
+    mcp.pin(gripperDir, value=direction)
+    gripperPWM.duty_u16(speed)
+    
+
+def joystickSpeed(val):
+    return min(65535, int((abs(val) / 127.0) * 65535))
+
+
+mcpI2C = machine.I2C(0, sda=machine.Pin(0), scl=machine.Pin(1))
+mcp = mcp23017.MCP23017(mcpI2C, 0x20)
+
+i2c = I2C(1, sda=Pin(2), scl=Pin(3), freq=100_000)
+SLAVE_ADDR = 0x55
+
+#Direction Pins (MCP23017)
+baseDir = 0
+shoulderDir = 1
+elbowDir = 2
+wrist_rightDir = 3
+wrist_leftDir = 4
+gripperDir = 5
+
+mcp.pin(baseDir, mode=0)
+mcp.pin(shoulderDir, mode=0)
+mcp.pin(elbowDir, mode=0)
+mcp.pin(wrist_rightDir, mode=0)
+mcp.pin(wrist_leftDir, mode=0)
+mcp.pin(gripperDir, mode=0)
+
+#Microswitches (MCP23017)
+baseMS = 6
+shoulderMS = 7
+elbowMS = 8
+pitchMS = 9
+rollMS = 10
+gripperMS = 11
+
+mcp.pin(baseMS, mode=1, pullup=True)
+mcp.pin(shoulderMS, mode=1, pullup=True)
+mcp.pin(elbowMS, mode=1, pullup=True)
+mcp.pin(pitchMS, mode=1, pullup=True)
+mcp.pin(rollMS, mode=1, pullup=True)
+mcp.pin(gripperMS, mode=1, pullup=True)
+
+#Encoder state machine assign (Pi Pico)
+baseEncoder=encoderValue(16)
+shoulderEncoder=encoderValue(18)
+elbowEncoder=encoderValue(20)
+wrist_rightEncoder=encoderValue(14)
+wrist_leftEncoder=encoderValue(12)
+gripperEncoder=encoderValue(10)
+
+#PWM Pins (Pi Pico) (max speed 65535)
+basePWM = PWM(Pin(9), freq = 1000, duty_u16=0)
+shoulderPWM = PWM(Pin(8), freq = 1000, duty_u16=0)
+elbowPWM = PWM(Pin(7), freq = 1000, duty_u16=0)
+wrist_rightPWM = PWM(Pin(6), freq = 1000, duty_u16=0)
+wrist_leftPWM = PWM(Pin(5), freq = 1000, duty_u16=0)
+gripperPWM = PWM(Pin(4), freq = 1000, duty_u16=0)
+
+#I2C Setup
+b1Count = 0
+b1_prev = False
+b2Count = 0
+b2_prev = False
+b3Count = 0
+b3_prev = False
+b4Count = 0
+b4_prev = False
+b5Count = 0
+b5_prev = False
+b6Count = 0
+b6_prev = False
+
+reset_prev = False
+
+joy1Count = 0
+joy1_prev = False
+
+# Encoder counts
+baseCount = 0
+shoulderCount = 0
+elbowCount = 0
+wrist_rightCount = 0
+wrist_leftCount = 0
+gripperCount = 0
+basePrevRaw = 0
+
+while True:
+    # Base: use commanded direction since encoder direction is broken
+    newBaseRaw = baseEncoder.getCount()
+    if newBaseRaw is not None:
+        delta = newBaseRaw - basePrevRaw
+        basePrevRaw = newBaseRaw
+        if baseDirection == 0:
+            baseCount += delta
+        else:
+            baseCount -= delta
+
+    # All other encoders work correctly
+    newShoulder = shoulderEncoder.getCount()
+    if newShoulder is not None:
+        shoulderCount = newShoulder
+
+    newElbow = elbowEncoder.getCount()
+    if newElbow is not None:
+        elbowCount = newElbow
+
+    newWristRight = wrist_rightEncoder.getCount()
+    if newWristRight is not None:
+        wrist_rightCount = newWristRight
+
+    newWristLeft = wrist_leftEncoder.getCount()
+    if newWristLeft is not None:
+        wrist_leftCount = newWristLeft
+
+    newGripper = gripperEncoder.getCount()
+    if newGripper is not None:
+        gripperCount = newGripper
+
+    try:
+        data = i2c.readfrom(SLAVE_ADDR, 6)
+        RxByte0 = data[0]
+        RxByte1 = data[1]
+        joystickX = data[2]
+        joystickY = data[3]
+        joystickX2 = data[4]
+        joystickY2 = data[5]
+        
+        switchRight = (RxByte0 & 0x01)
+        switchLeft = (RxByte0 & 0x02)
+        resetButton = bool(RxByte1 & 0x01)
+        joy1 = bool(RxByte1 & 0x02)
+        
+        b1 = bool(RxByte0 & 0x04)
+        b2 = bool(RxByte0 & 0x08)
+        b3 = bool(RxByte0 & 0x10)
+        b4 = bool(RxByte0 & 0x20)
+        b5 = bool(RxByte0 & 0x40)
+        b6 = bool(RxByte0 & 0x80)
+        
+        deadzone = 10
+        y_centered = joystickY - 127
+        x_centered = joystickX - 127
+        joyRight = x_centered > deadzone
+        joyLeft  = x_centered < -deadzone
+        joyUp    = y_centered > deadzone
+        joyDown  = y_centered < -deadzone
+        
+        y2_centered = joystickY2 - 127
+        x2_centered = joystickX2 - 127
+        joy2Right = x2_centered > deadzone
+        joy2Left  = x2_centered < -deadzone
+        joy2Up    = y2_centered > deadzone
+        joy2Down  = y2_centered < -deadzone
+        
+        if joy1 and not joy1_prev:
+            joy1Count = (joy1Count + 1) % 2
+            if joy1Count:
+                print("X-MODE")
+            else:
+                print("WRIST-MODE")
+        joy1_prev = joy1
+
+        if joy1Count:
+            #X Control
+            wrist_rightRun(0, 0)
+            wrist_leftRun(0, 0)
+            if joyRight:
+                baseRun(0, joystickSpeed(x_centered))
+            elif joyLeft:
+                baseRun(1, joystickSpeed(x_centered))
+            else:
+                baseRun(0, 0)
+            if joyUp:
+                shoulderRun(1, joystickSpeed(y_centered))
+            elif joyDown:
+                shoulderRun(0, joystickSpeed(y_centered))
+            else:
+                shoulderRun(0, 0)
+        else:
+            # Wrist Pitch/Roll Control
+            baseRun(0, 0)
+            shoulderRun(0, 0)
+            
+            # Roll component
+            roll = y_centered if abs(y_centered) > deadzone else 0
+           
+           # Pitch component
+            pitch = x_centered if abs(x_centered) > deadzone else 0
+            
+            # Differential mixing
+            right_cmd = pitch + roll
+            left_cmd = pitch - roll
+            
+            # Clamp to joystick range
+            right_cmd = max(-127, min(127, right_cmd))
+            left_cmd = max(-127, min(127, left_cmd))
+            
+            # Right wrist motor
+            if right_cmd > 0:
+                wrist_rightRun(0, joystickSpeed(right_cmd))
+            elif right_cmd < 0:
+                wrist_rightRun(1, joystickSpeed(right_cmd))
+            else:
+                wrist_rightRun(0, 0)
+
+            # Left wrist motor
+            if left_cmd > 0:
+                wrist_leftRun(0, joystickSpeed(left_cmd))
+            elif left_cmd < 0:
+                wrist_leftRun(1, joystickSpeed(left_cmd))
+            else:
+                wrist_leftRun(0, 0)
+
+
+        if joy2Right:
+            gripperRun(0, joystickSpeed(x2_centered))
+        elif joy2Left:
+            gripperRun(1, joystickSpeed(x2_centered))
+        else:
+            gripperRun(0, 0)
+
+        if joy2Up:
+            elbowRun(1, joystickSpeed(y2_centered))
+        elif joy2Down:
+            elbowRun(0, joystickSpeed(y2_centered))
+        else:
+            elbowRun(0, 0)
+
+    except OSError:
+        print("Slave not found")
+        time.sleep_ms(10)
