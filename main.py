@@ -1,132 +1,221 @@
+import pygame
+
+import sys
+
+import serial
+
 import time
-from machine import Pin, PWM, I2C
-import rp2
-import mcp23017
-
-class encoderValue:
-    counter=0
-    @rp2.asm_pio(in_shiftdir=rp2.PIO.SHIFT_RIGHT)
-    def pulseCount():
-        mov(x, null)
-        label('start')
-        wait(1, pin, 1)
-        wait(0, pin, 1)
-        jmp(pin, 'ccw')
-        mov(x, invert(x))
-        jmp(x_dec, 'inc')
-        label('inc')
-        mov(x, invert(x))
-        mov(isr, x)
-        push()
-        jmp('start')
-        label('ccw')
-        jmp(x_dec, 'dec')
-        label('dec')
-        mov(isr, x)
-        push()
-        jmp('start')
-    
-    def __init__(self, firstPin):
-        self.dirPin = Pin(firstPin, Pin.IN, Pin.PULL_UP)
-        self.pulsePin = Pin(firstPin + 1, Pin.IN, Pin.PULL_UP)
-        self.sm = rp2.StateMachine(encoderValue.counter, encoderValue.pulseCount, freq=1_000_000, in_base=self.dirPin, jmp_pin=self.dirPin)
-        self.sm.active(1)
-        
-        encoderValue.counter += 1
-    
-    def getCount(self): #stops bottle necking from non moving encoder
-        if self.sm.rx_fifo() > 0:
-            raw = self.sm.get()
-            if raw > 0x7FFFFFFF:
-                return raw - 0x100000000
-            return raw
-        return None
-
-def baseRun(direction):
-    mcp.pin(baseDir, value=direction)
-    basePWM.duty_u16(65535)
-
-def shoulderRun(direction):
-    mcp.pin(shoulderDir, value=direction)
-    shoulderPWM.duty_u16(65535)
-    
-def elbowRun(direction):
-    mcp.pin(elbowDir, value=direction)
-    elbowPWM.duty_u16(65535)
-    
-def wrist_rightRun(direction):
-    mcp.pin(wrist_rightDir, value=direction)
-    wrist_rightPWM.duty_u16(65535)
-    
-def wrist_leftRun(direction):
-    mcp.pin(wrist_leftDir, value=direction)
-    wrist_leftPWM.duty_u16(65535)
-    
-def gripperRun(direction):
-    mcp.pin(gripperDir, value=direction)
-    gripperPWM.duty_u16(65535)
-    
 
 
-mcpI2C = machine.I2C(0, sda=machine.Pin(0), scl=machine.Pin(1))
-mcp = mcp23017.MCP23017(mcpI2C, 0x20)
+
+try:
+
+    ser = serial.Serial('COM3', 115200, timeout=1)
+
+    time.sleep(2)  # Allow time for serial connection to establish
+
+    print("Serial connected to Pico!")
+
+except Exception as e:
+
+    print(f"Serial connection failed: {e}")
+
+    ser = None
 
 
-#Direction Pins (MCP23017)
-baseDir = 0
-shoulderDir = 1
-elbowDir = 2
-wrist_rightDir = 3
-wrist_leftDir = 4
-gripperDir = 5
 
-mcp.pin(baseDir, mode=0)
-mcp.pin(shoulderDir, mode=0)
-mcp.pin(elbowDir, mode=0)
-mcp.pin(wrist_rightDir, mode=0)
-mcp.pin(wrist_leftDir, mode=0)
-mcp.pin(gripperDir, mode=0)
+pygame.init()
 
-#Microswitches (MCP23017)
-baseMS = 6
-shoulderMS = 7
-elbowMS = 8
-pitchMS = 9
-rollMS = 10
-gripperMS = 11
-
-mcp.pin(baseMS, mode=1, pullup=True)
-mcp.pin(shoulderMS, mode=1, pullup=True)
-mcp.pin(elbowMS, mode=1, pullup=True)
-mcp.pin(pitchMS, mode=1, pullup=True)
-mcp.pin(rollMS, mode=1, pullup=True)
-mcp.pin(gripperMS, mode=1, pullup=True)
-
-#Encoder state machine assign (Pi Pico)
-baseEncoder=encoderValue(16)
-shoulderEncoder=encoderValue(18)
-elbowEncoder=encoderValue(20)
-wrist_rightEncoder=encoderValue(14)
-wrist_leftEncoder=encoderValue(12)
-gripperEncoder=encoderValue(10)
+pygame.font.init()
 
 
-#PWM Pins (Pi Pico)
-basePWM = PWM(Pin(9), freq = 1000, duty_u16=0)
-shoulderPWM = PWM(Pin(8), freq = 1000, duty_u16=0)
-elbowPWM = PWM(Pin(7), freq = 1000, duty_u16=0)
-wrist_rightPWM = PWM(Pin(6), freq = 1000, duty_u16=0)
-wrist_leftPWM = PWM(Pin(5), freq = 1000, duty_u16=0)
-gripperPWM = PWM(Pin(4), freq = 1000, duty_u16=0)
+
+screen = pygame.display.set_mode((1300, 500))
+
+pygame.display.set_caption("Xbox Controller On-Screen Display")
 
 
-while True:
-    baseCount = baseEncoder.getCount()
-    shoulderCount = shoulderEncoder.getCount()
-    elbowCount = elbowEncoder.getCount()
-    wrist_rightCount = wrist_rightEncoder.getCount()
-    wrist_leftCount = wrist_leftEncoder.getCount()
-    gripperCount = gripperEncoder.getCount()
-    
-    shoulderRun(1)
-    
+
+pygame.joystick.init()
+
+
+
+try:
+
+    font = pygame.font.SysFont("Arial", 22)
+
+except Exception:
+
+    font = pygame.font.Font(None, 26)
+
+
+
+joystick_count = pygame.joystick.get_count()
+
+controller_name = "No controller found"
+
+
+
+if joystick_count > 0:
+
+    controller = pygame.joystick.Joystick(0)
+
+    controller.init()
+
+    controller_name = controller.get_name()
+
+
+
+# 1. Define custom name mappings for Xbox controllers
+
+BUTTON_NAMES = {
+
+    0: "A",
+
+    1: "B",
+
+    2: "X",
+
+    3: "Y",
+
+    4: "LB",
+
+    5: "RB",
+
+    6: "Back",
+
+    7: "Start",
+
+    8: "L3",
+
+    9: "R3",
+
+    10: "Xbox Guide",
+
+    11: "Share"
+
+}
+
+
+
+AXIS_NAMES = {
+
+    0: "Left Stick X",
+
+    1: "Left Stick Y",
+
+    2: "Right Stick X",
+
+    3: "Right Stick Y",
+
+    4: "LT",
+
+    5: "RT"
+
+}
+
+
+
+button_states = {}
+
+axis_states = {}
+
+hat_value = (0, 0)
+
+
+
+clock = pygame.time.Clock()
+
+running = True
+
+
+
+while running:
+
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+
+            running = False
+
+
+
+        elif event.type == pygame.JOYBUTTONDOWN:
+
+            # Map the integer index to a human-readable name
+
+            button_name = BUTTON_NAMES.get(event.button, f"Button {event.button}")
+
+            button_states[button_name] = "pressed"
+
+
+
+        elif event.type == pygame.JOYBUTTONUP:
+
+            button_name = BUTTON_NAMES.get(event.button, f"Button {event.button}")
+
+            button_states[button_name] = ""
+
+
+
+        elif event.type == pygame.JOYAXISMOTION:
+
+            # Map the integer axis index to a human-readable name
+
+            axis_name = AXIS_NAMES.get(event.axis, f"Axis {event.axis}")
+
+            if abs(event.value) > 0.1:
+
+                axis_states[axis_name] = round(event.value, 2)
+
+            else:
+
+                axis_states[axis_name] = 0.0
+
+
+
+        elif event.type == pygame.JOYHATMOTION:
+
+            hat_value = event.value
+
+
+
+    screen.fill((30, 30, 30))
+
+
+
+    texts = [
+
+        f"Controller: {controller_name}",
+
+        f"Last Hat (D-Pad): {hat_value}",
+
+        f"Buttons: {button_states}",
+
+        f"Axes: {axis_states}"
+
+    ]
+
+
+
+    y_offset = 30
+
+    for text_line in texts:
+
+        surface = font.render(text_line, True, (240, 240, 240))
+
+        screen.blit(surface, (30, y_offset))
+
+        y_offset += 40
+
+
+
+    pygame.display.flip()
+
+    clock.tick(60)
+
+
+
+pygame.quit()
+
+sys.exit()
