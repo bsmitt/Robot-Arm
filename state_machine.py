@@ -33,10 +33,25 @@ class encoderValue:
         
         encoderValue.counter += 1
     
-    def getCount(self): #stops bottle necking from non moving encoder
-        if self.sm.rx_fifo() > 0:
+    def getCount(self):
+        latest = None
+
+        while self.sm.rx_fifo() > 0:
             raw = self.sm.get()
+
             if raw > 0x7FFFFFFF:
-                return raw - 0x100000000
-            return raw
-        return None
+                raw -= 0x100000000
+
+            latest = raw
+
+        return latest
+
+
+    
+    def resetCount(self):
+        # Reset the PIO X register
+        self.sm.exec("mov(x, null)")
+
+        # Clear old encoder readings
+        while self.sm.rx_fifo() > 0:
+            self.sm.get()
