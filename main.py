@@ -53,8 +53,12 @@ for pin in (
 ):
     mcp.pin(pin, mode=1, pullup=True)
     
+baseSwitchPrev = False
 shoulderSwitchPrev = False
-
+elbowSwitchPrev = False
+pitchSwitchPrev = False
+rollSwitchPrev = False
+gripperSwitchPrev = False
 
 # =========================================================
 # MOTOR PWM OUTPUTS
@@ -162,11 +166,25 @@ print("Looking for ESP32 at I2C address 0x55")
 while True:
 
     # -----------------------------------------------------
-    # UPDATE ENCODERS
+    # UPDATE ENCODERS AND LIMIT SWITCHES
     # -----------------------------------------------------
-    newBaseRaw = baseEncoder.getCount()
-    if newBaseRaw is not None:
-        baseCount = newBaseRaw
+    #BASE   
+    baseLimit = (mcp.pin(baseMS) == 0)
+    if baseLimit and not baseSwitchPrev:
+        baseEncoder.resetCount()
+        baseCount = 0
+
+    # Keep count at zero while switch is pressed
+    elif baseLimit:
+        baseCount = 0
+
+    else:
+        newBaseRaw = baseEncoder.getCount()
+
+        if newBaseRaw is not None:
+            baseCount = newBaseRaw
+
+    baseSwitchPrev = baseLimit
  
     #SHOULDER   
     shoulderLimit = (mcp.pin(shoulderMS) == 0)
